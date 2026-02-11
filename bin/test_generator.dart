@@ -29,17 +29,16 @@ void main(List<String> args) async {
   }
 
   final code = await file.readAsString();
-  final prompt = '''
-Generate a Flutter $testType test.
-- Output ONLY valid Dart code.
-- Do NOT create mock classes.
-- Use the actual classes from imports.
-- Include comments only for guidance.
-- Include proper imports and use flutter_test package.
-$code
-IMPORTANT: Do not include any text outside of comments.
-''';
 
+  final prompt = '''
+Generate a Flutter $testType test for the following Dart code.
+- Output ONLY Dart code.
+- If you need to provide guidance, include it as a comment in the code.
+- Do NOT write explanations outside of comments.
+- Include proper imports and use flutter_test package.
+Dart code:
+$code
+''';
 
   final response = await generateTest(apiKey, prompt);
 
