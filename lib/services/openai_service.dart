@@ -9,7 +9,8 @@ class AiResponse {
 }
 
 class GroqService {
-  static const _apiKey = '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';
+  static const _apiKey = 'YOUR_API_KEY_HERE';
+
 
   Future<AiResponse> explainError(String error) async {
     final res = await http.post(
