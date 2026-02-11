@@ -1,3 +1,4 @@
+// bin/test_generator.dart
 import 'dart:io';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
@@ -5,7 +6,8 @@ import 'package:path/path.dart' as p;
 import 'package:dotenv/dotenv.dart' show DotEnv;
 
 void main(List<String> args) async {
-  final dotEnv = DotEnv()..load(); // ✅ correct for dotenv ^5.x
+  // Load .env file correctly
+  final dotEnv = DotEnv()..load(); // ✅ Works for dotenv ^5.x
   final apiKey = dotEnv['OPENAI_API_KEY'];
 
   if (apiKey == null || apiKey.isEmpty) {
@@ -31,16 +33,25 @@ void main(List<String> args) async {
   final code = await file.readAsString();
 
   final prompt = '''
-Generate a Flutter $testType test for the following Dart code.
-- Output ONLY Dart code.
-- If you need to provide guidance, include it as a comment in the code.
-- Do NOT write explanations outside of comments.
+Generate a Flutter $testType test.
+- Output ONLY valid Dart code.
+- Include mock classes for any controllers or widgets as needed.
+- If a controller uses GetX reactive types (RxInt, RxString, RxBool, RxDouble):
+  - Initialize them correctly in the mock (e.g., RxInt total = 10.obs)
+  - **When setting values in tests, always use .value** (e.g., controller.total.value = 10)
 - Include proper imports and use flutter_test package.
-Dart code:
+- Do NOT include any comments or explanations outside of code.
 $code
+IMPORTANT: Only output Dart code; nothing else.
 ''';
 
+
+  // Call the AI API
   final response = await generateTest(apiKey, prompt);
+
+  // Determine test file path
+  final testDir = Directory('test');
+  if (!testDir.existsSync()) testDir.createSync();
 
   final fileName = p.basenameWithoutExtension(filePath) + '_test.dart';
   final testFile = File(p.join('test', fileName));
@@ -59,19 +70,20 @@ Future<String> generateTest(String apiKey, String prompt) async {
       'Content-Type': 'application/json',
     },
     body: jsonEncode({
-      'model': 'llama-3.1-8b-instant',// you can switch to 8b-instant if slow
+      'model': 'llama-3.1-8b-instant', // fast and supported
       'messages': [
         {
           'role': 'system',
-          'content': 'You are an expert Flutter developer who writes correct Bloc, widget, and unit tests.'
+          'content':
+          'You are an expert Flutter developer who writes correct Bloc, widget, and unit tests.'
         },
         {
           'role': 'user',
-          'content': prompt
+          'content': prompt,
         }
       ],
       'temperature': 0.2,
-      'max_tokens': 1200,
+      'max_tokens': 1500,
     }),
   );
 
@@ -83,4 +95,3 @@ Future<String> generateTest(String apiKey, String prompt) async {
   final data = jsonDecode(response.body);
   return data['choices'][0]['message']['content'];
 }
-
